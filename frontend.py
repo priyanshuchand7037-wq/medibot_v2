@@ -1,9 +1,12 @@
-import streamlit as st
-import requests
-from pypdf import PdfReader
 import os
+import streamlit as st
+from pypdf import PdfReader
+from groq import Groq
+from app.retriever import load_knowledge_base, hybrid_retrieve
+from app.ingestion import ingest_verified_file
+from app.config import ADMIN_API_KEY, GROQ_MODEL
 
-# --- APP CONFIGURATION ---
+# --- APP CONFIGURATION (Must be the first Streamlit command) ---
 st.set_page_config(
     page_title="Medibot — AI Specialist & Health Assistant",
     page_icon="🩺",
@@ -11,7 +14,66 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-API_URL = st.secrets.get("BACKEND_API_URL", os.getenv("BACKEND_API_URL", "http://localhost:8000"))
+# API Key Resolution (Streamlit Secrets on Cloud, .env fallback locally)
+try:
+    GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", os.getenv("GROQ_API_KEY", ""))
+except Exception:
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+
+@st.cache_resource(show_spinner="Mounting clinical knowledge base...")
+def initialize_knowledge_base():
+    load_knowledge_base()
+    return True
+
+initialize_knowledge_base()
+
+# Local streaming generator replacing the FastAPI backend endpoint
+def generate_clinical_response(query: str, report_text: str = ""):
+    if not GROQ_API_KEY or GROQ_API_KEY.startswith("your_"):
+        yield "❌ **Configuration Error:** GROQ_API_KEY is not configured in environment or Streamlit Secrets."
+        return
+
+    search_context = query
+    user_report_prompt_text = ""
+
+    if report_text:
+        user_report_prompt_text = f"\n[User Attached Lab Report Details]:\n{report_text}\n"
+        search_context = f"{query} {report_text[:250]}"
+
+    retrieved_facts = hybrid_retrieve(search_context, top_n=3)
+
+    if not retrieved_facts or not retrieved_facts.strip():
+        yield "The verified clinical knowledge base appears unindexed. Please verify storage."
+        return
+
+    prompt = (
+        f"You are Dr. Medibot, an expert clinical AI assistant.\n"
+        f"Analyze the patient's inquiry using the retrieved medical excerpts provided below.\n"
+        f"Synthesize the literature and correlate clinical terms.\n"
+        f"Only if the topic is completely unaddressed in the text, state that the verified literature does not cover this topic.\n\n"
+        f"--- VERIFIED MEDICAL EXCERPTS ---\n{retrieved_facts}\n---------------------------------\n"
+        f"{user_report_prompt_text}\n"
+        f"Patient Question / Symptoms: {query}\n\n"
+        f"Provide a structured clinical response with these sections:\n"
+        f"• Potential Clinical Causes (based on retrieved literature)\n"
+        f"• Home Care & Next Steps\n"
+        f"• Red Flag Warning Signs (When to seek immediate emergency care)\n"
+    )
+
+    client = Groq(api_key=GROQ_API_KEY)
+    stream = client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[
+            {"role": "system", "content": "You are a clinical decision-support AI. Provide safe, literature-grounded medical guidance."},
+            {"role": "user", "content": prompt}
+        ],
+        stream=True
+    )
+    for chunk in stream:
+        content = chunk.choices[0].delta.content
+        if content:
+            yield content
+
 
 # --- CUSTOM CSS: PERLA & MEDOK LIGHT THEME DESIGN SYSTEM ---
 st.markdown("""
@@ -406,28 +468,25 @@ with col_chat:
             response_box = st.empty()
             full_response = ""
 
-            payload = {
-                "query": user_input,
-                "report_text": st.session_state.user_report_text if st.session_state.user_report_text else None
-            }
+            report_context = st.session_state.user_report_text if "user_report_text" in st.session_state and st.session_state.user_report_text else ""
 
             try:
-                res = requests.post(f"{API_URL}/api/v1/chat", json=payload, stream=True)
-                if res.status_code == 200:
-                    for line in res.iter_lines(decode_unicode=True):
-                        if line and line.startswith("data: "):
-                            token = line.replace("data: ", "").replace("\\n", "\n")
-                            full_response += token
-                            response_box.markdown(full_response + " ▌")
+                # Direct in-memory RAG generation
+                stream_gen = generate_clinical_response(
+                    query=user_input,
+                    report_text=report_context
+                )
 
-                    final_display = full_response + "<br><span class='verified-chip'>✓ Verified Reference Match</span>"
-                    response_box.markdown(final_display, unsafe_allow_html=True)
-                    st.session_state.messages.append({"role": "assistant", "content": final_display})
-                else:
-                    detail = res.json().get("detail", "Error processing medical query.")
-                    response_box.error(detail)
+                for token in stream_gen:
+                    full_response += token
+                    response_box.markdown(full_response + " ▌")
+
+                final_display = full_response + "<br><span class='verified-chip'>✓ Verified Reference Match</span>"
+                response_box.markdown(final_display, unsafe_allow_html=True)
+                st.session_state.messages.append({"role": "assistant", "content": final_display})
+
             except Exception as e:
-                response_box.error(f"Could not connect to health gateway: {e}")
+                response_box.error(f"Clinical inference error: {e}")
 
 st.markdown("<br><hr style='border:none; border-top:1px solid #E8ECEF;'><br>", unsafe_allow_html=True)
 
@@ -457,22 +516,26 @@ with st.expander("🛡️ Medical Reference Admin Portal (Authorized Personnel)"
         if st.button("Upload to Knowledge Base", type="primary"):
             if not admin_pass:
                 st.error("Admin credentials required.")
+            elif admin_pass != ADMIN_API_KEY:
+                st.error("Error 403: Forbidden - Invalid Admin Token.")
             elif not admin_file:
                 st.warning("Please choose a medical textbook PDF.")
             else:
-                with st.spinner("Processing textbook into verified knowledge repository..."):
-                    files = {"file": (admin_file.name, admin_file.getvalue(), "application/pdf")}
-                    headers = {"x-admin-token": admin_pass}
-                    try:
-                        resp = requests.post(f"{API_URL}/api/v1/admin/upload-verified-book", files=files, headers=headers)
-                        if resp.status_code == 200:
-                            data = resp.json()
-                            st.success(f"Success! {data['message']} (Indexed Chunks: {data['total_chunks']})")
-                        else:
-                            st.error(f"Error {resp.status_code}: {resp.json().get('detail')}")
-                    except Exception as ex:
-                        st.error(f"Failed to communicate with service: {ex}")
+                temp_path = f"temp_{admin_file.name}"
+                with open(temp_path, "wb") as buffer:
+                    buffer.write(admin_file.getbuffer())
 
+                try:
+                    with st.spinner("Processing and indexing textbook into verified knowledge repository..."):
+                        chunks = ingest_verified_file(temp_path)
+                        load_knowledge_base()
+                    st.success(f"Success! Book '{admin_file.name}' permanently saved to disk and loaded into RAM. (Indexed Chunks: {chunks})")
+                except Exception as ex:
+                    st.error(f"Failed to ingest document: {ex}")
+                finally:
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+                    
     with col_a2:
         st.info("Medical textbooks uploaded here are permanently stored and referenced for future consultations.")
 
