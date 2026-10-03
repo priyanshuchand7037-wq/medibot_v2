@@ -516,34 +516,62 @@ div[data-testid="stTextInput"] input { border-radius: 8px; }
     .facts { gap: 18px; }
 }
 
-/* ---------- Mobile ---------- */
-@media (max-width: 640px) {
+/* ---------- Mobile & Responsive Navbar ---------- */
+/* By default on desktop: hide the hamburger wrapper */
+div.mobile-menu-wrapper {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
     .block-container { padding: .7rem .75rem 9rem .75rem !important; }
 
-    /* navbar: logo on its own row, four links evenly spaced underneath */
+    /* Single clean row for header */
     div[data-testid="stHorizontalBlock"]:has(.brand-logo) {
-        position: static;
-        flex-wrap: wrap !important;
-        gap: 0 !important;
-        padding: 4px 12px 2px 12px;
-        margin-bottom: 22px;
+        position: sticky;
+        top: 8px;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        padding: 6px 14px !important;
+        margin-bottom: 20px !important;
     }
-    div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:first-child {
-        flex: 1 1 100% !important;
-        min-width: 100% !important;
-        width: 100% !important;
-    }
-    div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:not(:first-child) {
-        flex: 1 1 0 !important;
-        min-width: 0 !important;
-        width: auto !important;
-        border-top: 1px solid var(--line);
-    }
-    div[data-testid="stHorizontalBlock"]:has(.brand-logo) .stButton > button { min-height: 40px; padding: 0 2px; }
-    div[data-testid="stHorizontalBlock"]:has(.brand-logo) .stButton > button p { font-size: 13px; }
-    .brand-logo { height: 46px; }
 
-    /* every other column row stacks */
+    /* Logo stays on the left */
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:first-child {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+    }
+
+    /* Hide the 4 inline desktop buttons on small screens */
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div.desktop-nav-link {
+        display: none !important;
+    }
+
+    /* Show the hamburger menu on the right end */
+    div.mobile-menu-wrapper {
+        display: block !important;
+        flex: 0 0 auto !important;
+    }
+
+    /* Style the hamburger popover trigger button */
+    div.mobile-menu-wrapper div[data-testid="stPopover"] > button {
+        background: transparent !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 8px !important;
+        min-height: 38px !important;
+        padding: 4px 10px !important;
+        box-shadow: none !important;
+        color: var(--navy) !important;
+    }
+    div.mobile-menu-wrapper div[data-testid="stPopover"] > button:hover {
+        border-color: var(--teal) !important;
+        background: #F2F9FD !important;
+    }
+
+    /* Stacking for cards and panels */
     div[data-testid="stHorizontalBlock"]:not(:has(.brand-logo)) { flex-wrap: wrap; gap: .75rem; }
     div[data-testid="stHorizontalBlock"]:not(:has(.brand-logo)) > div[data-testid="stColumn"],
     div[data-testid="stHorizontalBlock"]:not(:has(.brand-logo)) > div[data-testid="column"] {
@@ -606,27 +634,14 @@ def new_chat():
 
 
 # =====================================================================
-#  NAVBAR  (text links with an underline; each opens its own page)
+#  NAVBAR (Desktop inline tabs + Mobile Hamburger Popover)
 # =====================================================================
 current_page = st.session_state.nav_page
-active_col = PAGES.index(current_page) + 2  # column 1 is the logo
 
-st.markdown(
-    f"""
-<style>
-div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:nth-child({active_col}) .stButton > button p {{
-    color: var(--teal);
-    font-weight: 600;
-}}
-div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:nth-child({active_col}) .stButton > button p::after {{
-    transform: scaleX(1);
-}}
-</style>
-""",
-    unsafe_allow_html=True,
-)
+# Column structure: [Logo, Home, About, Admin, Contact, Hamburger-Menu]
+nav_cols = st.columns([3.5, 1, 1, 1.4, 1, 0.8])
 
-nav_cols = st.columns([3.2, 1, 1, 1.5, 1.1])
+# 1. Brand Logo (Left)
 with nav_cols[0]:
     st.markdown(
         '<div class="brand-logo"><div class="brand-mark">'
@@ -635,10 +650,27 @@ with nav_cols[0]:
         '<span class="brand-name">Medibot</span></div>',
         unsafe_allow_html=True,
     )
-for col, name in zip(nav_cols[1:], PAGES):
-    with col:
-        st.button(name, key="nav_" + name.lower().replace(" ", "_"), on_click=go, args=(name,))
 
+# 2. Desktop Inline Buttons (Visible on desktop, hidden on mobile via CSS)
+for col, name in zip(nav_cols[1:5], PAGES):
+    with col:
+        st.markdown('<div class="desktop-nav-link">', unsafe_allow_html=True)
+        st.button(name, key="nav_" + name.lower().replace(" ", "_"), on_click=go, args=(name,))
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# 3. Hamburger Menu (Hidden on desktop, appears at right end on mobile)
+with nav_cols[5]:
+    st.markdown('<div class="mobile-menu-wrapper">', unsafe_allow_html=True)
+    with st.popover("☰", help="Menu"):
+        st.markdown("**Navigation**")
+        for p in PAGES:
+            is_active = " (Active)" if p == current_page else ""
+            if st.button(f"{p}{is_active}", key=f"mob_nav_{p.lower().replace(' ', '_')}"):
+                go(p)
+                st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    
 
 # =====================================================================
 #  SHARED HELPERS
