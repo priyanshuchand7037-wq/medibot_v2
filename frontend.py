@@ -1,4 +1,5 @@
 import os
+import textwrap
 from urllib.parse import quote
 
 import streamlit as st
@@ -9,7 +10,7 @@ from app.ingestion import ingest_verified_file
 from app.config import ADMIN_API_KEY, GROQ_MODEL
 
 
-# --- Browser-tab icon (drawn in code so no emoji / image file is needed) ---
+# --- Browser-tab icon ---
 def _make_favicon():
     try:
         from PIL import Image, ImageDraw
@@ -24,7 +25,7 @@ def _make_favicon():
         return None
 
 
-# --- APP CONFIGURATION (Must be the first Streamlit command) ---
+# --- APP CONFIGURATION ---
 st.set_page_config(
     page_title="Medibot — AI Specialist & Health Assistant",
     page_icon=_make_favicon(),
@@ -32,7 +33,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# API Key Resolution (Streamlit Secrets on Cloud, .env fallback locally)
+# API Key Resolution
 try:
     GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", os.getenv("GROQ_API_KEY", ""))
 except Exception:
@@ -48,7 +49,6 @@ def initialize_knowledge_base():
 initialize_knowledge_base()
 
 
-# Local streaming generator replacing the FastAPI backend endpoint
 def generate_clinical_response(query: str, report_text: str = ""):
     if not GROQ_API_KEY or GROQ_API_KEY.startswith("your_"):
         yield "**Configuration error:** GROQ_API_KEY is not configured in environment or Streamlit Secrets."
@@ -101,8 +101,6 @@ def generate_clinical_response(query: str, report_text: str = ""):
 
 # =====================================================================
 #  BACKGROUND
-#  Default: a built-in medical-themed SVG (soft teal wash, faint crosses,
-#  heartbeat line). To use your own photo instead, paste an image URL below.
 # =====================================================================
 BACKGROUND_IMAGE_URL = ""
 
@@ -138,11 +136,11 @@ else:
 # =====================================================================
 #  DESIGN SYSTEM
 # =====================================================================
-CSS = """
+CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:wght@500;600;700&display=swap');
 
-:root {
+:root {{
     --navy: #0B2A43;
     --teal: #0E7C86;
     --teal-dark: #0A5F67;
@@ -150,26 +148,26 @@ CSS = """
     --text: #24384B;
     --muted: #5B6E80;
     --line: #D3E1E8;
-}
+}}
 
 /* ---------- Base ---------- */
-html, body, .stApp, .stMarkdown, button, input, textarea {
+html, body, .stApp, .stMarkdown, button, input, textarea {{
     font-family: 'IBM Plex Sans', sans-serif !important;
     color: var(--text);
-}
-.stApp { background: __BG__; }
-header[data-testid="stHeader"] { background: transparent; }
-#MainMenu, footer { visibility: hidden; }
+}}
+.stApp {{ background: {BG_CSS}; }}
+header[data-testid="stHeader"] {{ background: transparent; }}
+#MainMenu, footer {{ visibility: hidden; }}
 
-.block-container {
+.block-container {{
     max-width: 980px !important;
     padding: 1.4rem 1.2rem 9rem 1.2rem !important;
-}
+}}
 
 /* =====================================================================
    RESPONSIVE HYBRID NAVBAR
    ===================================================================== */
-.navbar-container {
+.navbar-container {{
     position: sticky;
     top: 10px;
     z-index: 9999;
@@ -179,19 +177,19 @@ header[data-testid="stHeader"] { background: transparent; }
     background: #FFFFFF;
     border: 1px solid var(--line);
     border-radius: 14px;
-    padding: 6px 20px;
+    padding: 8px 20px;
     box-shadow: 0 2px 14px rgba(11, 42, 67, .07);
     margin-bottom: 28px;
-}
+}}
 
-.brand-section {
+.brand-section {{
     display: flex;
     align-items: center;
     gap: 10px;
     text-decoration: none !important;
-}
+}}
 
-.brand-mark {
+.brand-mark {{
     width: 32px;
     height: 32px;
     border-radius: 8px;
@@ -200,24 +198,24 @@ header[data-testid="stHeader"] { background: transparent; }
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-}
+}}
 
-.brand-name {
+.brand-name {{
     font-family: 'Source Serif 4', serif !important;
     font-size: 22px;
     font-weight: 700;
     color: var(--navy);
     white-space: nowrap;
-}
+}}
 
-/* Desktop text navigation links */
-.desktop-links {
+/* Desktop Links */
+.desktop-links {{
     display: flex;
     align-items: center;
     gap: 24px;
-}
+}}
 
-.nav-link {
+.nav-link {{
     font-size: 14.5px;
     font-weight: 500;
     color: var(--text);
@@ -225,18 +223,18 @@ header[data-testid="stHeader"] { background: transparent; }
     position: relative;
     padding: 4px 0;
     transition: color 0.2s ease;
-}
+}}
 
-.nav-link:hover {
+.nav-link:hover {{
     color: var(--teal);
-}
+}}
 
-.nav-link.active {
+.nav-link.active {{
     color: var(--teal);
     font-weight: 600;
-}
+}}
 
-.nav-link.active::after {
+.nav-link.active::after {{
     content: "";
     position: absolute;
     left: 0;
@@ -245,15 +243,15 @@ header[data-testid="stHeader"] { background: transparent; }
     height: 2px;
     background: var(--teal);
     border-radius: 2px;
-}
+}}
 
 /* Mobile Hamburger Menu */
-.mobile-menu {
+.mobile-menu {{
     display: none;
     position: relative;
-}
+}}
 
-.mobile-menu summary {
+.mobile-menu summary {{
     list-style: none;
     cursor: pointer;
     display: flex;
@@ -263,31 +261,31 @@ header[data-testid="stHeader"] { background: transparent; }
     height: 36px;
     padding: 0;
     outline: none;
-}
-.mobile-menu summary::-webkit-details-marker {
-    display: none;
-}
+    border: none;
+    background: transparent;
+}}
 
-.hamburger-lines {
+.mobile-menu summary::-webkit-details-marker {{
+    display: none;
+}}
+
+.hamburger-lines {{
     width: 22px;
     height: 16px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-}
-.hamburger-lines span {
+}}
+
+.hamburger-lines span {{
     display: block;
-    height: 2.2px;
+    height: 2.4px;
     width: 100%;
     background-color: var(--navy);
     border-radius: 2px;
-    transition: background-color 0.2s;
-}
-.mobile-menu summary:hover .hamburger-lines span {
-    background-color: var(--teal);
-}
+}}
 
-.mobile-dropdown {
+.mobile-dropdown {{
     position: absolute;
     top: 42px;
     right: 0;
@@ -300,55 +298,106 @@ header[data-testid="stHeader"] { background: transparent; }
     display: flex;
     flex-direction: column;
     z-index: 10000;
-}
+}}
 
-.mobile-dropdown a {
+.mobile-dropdown a {{
     padding: 10px 18px;
     font-size: 14.5px;
     font-weight: 500;
     color: var(--text);
     text-decoration: none !important;
-    transition: background 0.15s;
-}
+}}
 
-.mobile-dropdown a:hover {
+.mobile-dropdown a:hover {{
     background: #F2F9FD;
     color: var(--teal);
-}
+}}
 
-.mobile-dropdown a.active {
+.mobile-dropdown a.active {{
     color: var(--teal);
     font-weight: 600;
     background: #EAF5F8;
-}
+}}
 
-/* Switch from desktop links to hamburger below 768px */
-@media (max-width: 768px) {
-    .desktop-links {
+/* Breakpoint for Mobile */
+@media (max-width: 768px) {{
+    .desktop-links {{
         display: none !important;
-    }
-    .mobile-menu {
+    }}
+    .mobile-menu {{
         display: block !important;
-    }
-}
+    }}
+}}
+
+/* ---------- Buttons ---------- */
+.stButton > button {{
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    min-height: 42px;
+    background: linear-gradient(135deg, var(--teal), var(--blue));
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(14, 124, 134, .25);
+    transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}}
+.stButton > button p {{ color: #fff; font-size: 14.5px; margin: 0; }}
+.stButton > button:hover {{
+    color: #fff;
+    filter: brightness(1.07);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(14, 124, 134, .30);
+}}
+
+/* Suggestion cards */
+[class*="st-key-sg_"] .stButton,
+[class*="st-key-sg_"] div[data-testid="stButton"] {{ width: 100%; }}
+[class*="st-key-sg_"] button {{
+    width: 100%;
+    min-height: 88px;
+    padding: 16px 18px;
+    justify-content: flex-start;
+    text-align: left;
+    background: #FFFFFF;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(11, 42, 67, .05);
+    filter: none;
+}}
+[class*="st-key-sg_"] button p {{
+    color: var(--text);
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.5;
+    text-align: left;
+    white-space: normal;
+}}
+[class*="st-key-sg_"] button:hover {{
+    background: #FFFFFF;
+    border-color: var(--teal);
+    box-shadow: 0 8px 22px rgba(14, 124, 134, .14);
+    transform: translateY(-2px);
+    filter: none;
+}}
+[class*="st-key-sg_"] button:hover p {{ color: var(--navy); }}
 
 /* ---------- Home hero ---------- */
-.hero {
+.hero {{
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     padding: 34px 12px 6px 12px;
-}
-.hero-mark {
+}}
+.hero-mark {{
     width: 62px; height: 62px;
     border-radius: 16px;
     background: linear-gradient(135deg, var(--teal), var(--blue));
     display: flex; align-items: center; justify-content: center;
     margin-bottom: 24px;
     box-shadow: 0 10px 24px rgba(14, 124, 134, .26);
-}
-.hero-title {
+}}
+.hero-title {{
     font-family: 'Source Serif 4', serif !important;
     font-size: 42px;
     font-weight: 600;
@@ -356,25 +405,25 @@ header[data-testid="stHeader"] { background: transparent; }
     letter-spacing: -.5px;
     color: var(--navy);
     margin: 0 0 14px 0;
-}
-.hero-sub {
+}}
+.hero-sub {{
     max-width: 500px;
     font-size: 16px;
     line-height: 1.65;
     color: var(--muted);
     margin: 0;
     text-align: center;
-}
-.hero-gap { height: 26px; }
+}}
+.hero-gap {{ height: 26px; }}
 
 /* ---------- Conversation toolbar ---------- */
-.tool-label {
+.tool-label {{
     display: flex; align-items: center;
     height: 42px;
     font-size: 15px; font-weight: 600;
     color: var(--navy);
-}
-.attach-chip {
+}}
+.attach-chip {{
     display: inline-flex; align-items: center; gap: 8px;
     height: 42px;
     max-width: 100%;
@@ -387,10 +436,10 @@ header[data-testid="stHeader"] { background: transparent; }
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-}
+}}
 
 /* ---------- Chat ---------- */
-.stChatMessage {
+.stChatMessage {{
     max-width: 820px;
     margin: 0 auto 12px auto;
     background: #FFFFFF !important;
@@ -399,12 +448,12 @@ header[data-testid="stHeader"] { background: transparent; }
     padding: 16px 20px !important;
     box-shadow: 0 1px 4px rgba(11, 42, 67, .05) !important;
     line-height: 1.7;
-}
+}}
 .stChatMessage:has([data-testid="stChatMessageAvatarUser"]),
-.stChatMessage:has([data-testid="chatAvatarIcon-user"]) { background: #EEF6F8 !important; }
+.stChatMessage:has([data-testid="chatAvatarIcon-user"]) {{ background: #EEF6F8 !important; }}
 [data-testid="stChatMessageAvatarAssistant"],
-[data-testid="chatAvatarIcon-assistant"] { background: var(--teal) !important; }
-.verified-chip {
+[data-testid="chatAvatarIcon-assistant"] {{ background: var(--teal) !important; }}
+.verified-chip {{
     display: inline-block;
     margin-top: 10px;
     padding: 4px 12px;
@@ -414,12 +463,12 @@ header[data-testid="stHeader"] { background: transparent; }
     background: #E4F2F3;
     border: 1px solid #BFDDE0;
     border-radius: 999px;
-}
+}}
 
 [data-testid="stBottom"] > div,
-[data-testid="stBottomBlockContainer"] { background: transparent !important; }
-[data-testid="stBottomBlockContainer"] { padding-bottom: 46px !important; }
-[data-testid="stChatInput"] {
+[data-testid="stBottomBlockContainer"] {{ background: transparent !important; }}
+[data-testid="stBottomBlockContainer"] {{ padding-bottom: 46px !important; }}
+[data-testid="stChatInput"] {{
     max-width: 820px;
     margin: 0 auto;
     border-radius: 16px;
@@ -427,30 +476,30 @@ header[data-testid="stHeader"] { background: transparent; }
     background: #FFFFFF;
     box-shadow: 0 6px 24px rgba(11, 42, 67, .10);
     transition: border-color .2s ease, box-shadow .2s ease;
-}
-[data-testid="stChatInput"] > div { background: #FFFFFF; border-radius: 16px; }
-[data-testid="stChatInput"]:focus-within {
+}}
+[data-testid="stChatInput"] > div {{ background: #FFFFFF; border-radius: 16px; }}
+[data-testid="stChatInput"]:focus-within {{
     border-color: var(--teal);
     box-shadow: 0 0 0 3px rgba(14, 124, 134, .16), 0 6px 24px rgba(11, 42, 67, .12);
-}
-[data-testid="stChatInput"] textarea { font-size: 15px; background: transparent; }
+}}
+[data-testid="stChatInput"] textarea {{ font-size: 15px; background: transparent; }}
 
 /* ---------- Inputs / containers ---------- */
-div[data-testid="stExpander"] {
+div[data-testid="stExpander"] {{
     background: #FFFFFF;
     border: 1px solid var(--line) !important;
     border-radius: 12px;
-}
-div[data-testid="stVerticalBlockBorderWrapper"] {
+}}
+div[data-testid="stVerticalBlockBorderWrapper"] {{
     background: #FFFFFF;
     border-radius: 14px;
     box-shadow: 0 1px 4px rgba(11, 42, 67, .05);
-}
-div[data-testid="stTextInput"] input { border-radius: 8px; }
+}}
+div[data-testid="stTextInput"] input {{ border-radius: 8px; }}
 
 /* ---------- Inner pages ---------- */
-.page-head { margin: 4px 0 22px 0; }
-.page-title {
+.page-head {{ margin: 4px 0 22px 0; }}
+.page-title {{
     font-family: 'Source Serif 4', serif !important;
     font-size: 36px;
     font-weight: 600;
@@ -458,67 +507,67 @@ div[data-testid="stTextInput"] input { border-radius: 8px; }
     line-height: 1.15;
     color: var(--navy);
     margin: 0 0 10px 0;
-}
-.page-sub { font-size: 15.5px; line-height: 1.65; color: var(--muted); max-width: 600px; margin: 0; }
-.page-rule { width: 64px; height: 3px; border-radius: 2px; margin-top: 18px; background: linear-gradient(90deg, var(--teal), var(--blue)); }
+}}
+.page-sub {{ font-size: 15.5px; line-height: 1.65; color: var(--muted); max-width: 600px; margin: 0; }}
+.page-rule {{ width: 64px; height: 3px; border-radius: 2px; margin-top: 18px; background: linear-gradient(90deg, var(--teal), var(--blue)); }}
 
-.panel {
+.panel {{
     background: #FFFFFF;
     border: 1px solid var(--line);
     border-radius: 14px;
     padding: 26px 30px;
     margin-bottom: 18px;
     box-shadow: 0 1px 4px rgba(11, 42, 67, .05);
-}
-.panel-title {
+}}
+.panel-title {{
     font-family: 'Source Serif 4', serif !important;
     font-size: 21px;
     font-weight: 600;
     color: var(--navy);
     margin: 0 0 6px 0;
-}
-.panel-text { font-size: 15px; line-height: 1.75; color: var(--muted); margin: 0; }
+}}
+.panel-text {{ font-size: 15px; line-height: 1.75; color: var(--muted); margin: 0; }}
 
-.step {
+.step {{
     display: grid;
     grid-template-columns: 40px 1fr;
     gap: 16px;
     padding: 16px 0;
     border-top: 1px solid var(--line);
-}
-.step:first-of-type { margin-top: 14px; }
-.step-no {
+}}
+.step:first-of-type {{ margin-top: 14px; }}
+.step-no {{
     width: 32px; height: 32px;
     border: 1.5px solid var(--teal);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 14px; font-weight: 600;
     color: var(--teal);
-}
-.step-title { font-size: 16px; font-weight: 600; color: var(--navy); margin: 2px 0 4px 0; }
-.step-text { font-size: 14.5px; line-height: 1.65; color: var(--muted); margin: 0; }
+}}
+.step-title {{ font-size: 16px; font-weight: 600; color: var(--navy); margin: 2px 0 4px 0; }}
+.step-text {{ font-size: 14.5px; line-height: 1.65; color: var(--muted); margin: 0; }}
 
-.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 18px; }
-.fact { border-top: 3px solid var(--teal); padding-top: 14px; }
-.fact-title { font-size: 15.5px; font-weight: 600; color: var(--navy); margin: 0 0 6px 0; }
-.fact-text { font-size: 14px; line-height: 1.65; color: var(--muted); margin: 0; }
+.facts {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 18px; }}
+.fact {{ border-top: 3px solid var(--teal); padding-top: 14px; }}
+.fact-title {{ font-size: 15.5px; font-weight: 600; color: var(--navy); margin: 0 0 6px 0; }}
+.fact-text {{ font-size: 14px; line-height: 1.65; color: var(--muted); margin: 0; }}
 
-.contact-row {
+.contact-row {{
     display: grid;
     grid-template-columns: 190px 1fr;
     gap: 16px;
     align-items: center;
     padding: 18px 0;
     border-top: 1px solid var(--line);
-}
-.contact-row:first-of-type { margin-top: 14px; }
-.contact-label { font-size: 13.5px; font-weight: 600; color: var(--muted); }
-.contact-value { font-size: 16px; color: var(--navy); font-weight: 500; word-break: break-word; }
-.contact-value a { color: var(--teal-dark); text-decoration: none; border-bottom: 1px solid rgba(14, 124, 134, .35); }
-.contact-value a:hover { border-bottom-color: var(--teal); }
+}}
+.contact-row:first-of-type {{ margin-top: 14px; }}
+.contact-label {{ font-size: 13.5px; font-weight: 600; color: var(--muted); }}
+.contact-value {{ font-size: 16px; color: var(--navy); font-weight: 500; word-break: break-word; }}
+.contact-value a {{ color: var(--teal-dark); text-decoration: none; border-bottom: 1px solid rgba(14, 124, 134, .35); }}
+.contact-value a:hover {{ border-bottom-color: var(--teal); }}
 
 /* ---------- Footer ---------- */
-.site-footer {
+.site-footer {{
     text-align: center;
     font-size: 12px;
     line-height: 1.6;
@@ -526,116 +575,70 @@ div[data-testid="stTextInput"] input { border-radius: 8px; }
     margin-top: 44px;
     padding-top: 18px;
     border-top: 1px solid var(--line);
-}
-.site-footer.fixed {
+}}
+.site-footer.fixed {{
     position: fixed;
     left: 0; right: 0; bottom: 0;
     margin: 0;
     padding: 9px 14px;
     background: rgba(255, 255, 255, .97);
     z-index: 1000;
-}
+}}
 
 /* ---------- Tablet ---------- */
-@media (max-width: 992px) {
-    .block-container { padding: 1rem 1rem 9rem 1rem !important; }
-    .hero-title { font-size: 36px; }
-    .page-title { font-size: 31px; }
-    .facts { gap: 18px; }
-}
+@media (max-width: 992px) {{
+    .block-container {{ padding: 1rem 1rem 9rem 1rem !important; }}
+    .hero-title {{ font-size: 36px; }}
+    .page-title {{ font-size: 31px; }}
+    .facts {{ gap: 18px; }}
+}}
 
-/* ---------- Mobile & Responsive Navbar ---------- */
-/* By default on desktop: hide the hamburger wrapper */
-div.mobile-menu-wrapper {
-    display: none !important;
-}
-
-@media (max-width: 768px) {
-    .block-container { padding: .7rem .75rem 9rem .75rem !important; }
-
-    /* Single clean row for header */
-    div[data-testid="stHorizontalBlock"]:has(.brand-logo) {
-        position: sticky;
-        top: 8px;
-        display: flex !important;
-        flex-direction: row !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        flex-wrap: nowrap !important;
-        padding: 6px 14px !important;
-        margin-bottom: 20px !important;
-    }
-
-    /* Logo stays on the left */
-    div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:first-child {
-        flex: 1 1 auto !important;
-        width: auto !important;
-        min-width: 0 !important;
-    }
-
-    /* Hide the 4 inline desktop buttons on small screens */
-    div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div.desktop-nav-link {
-        display: none !important;
-    }
-
-    /* Show the hamburger menu on the right end */
-    div.mobile-menu-wrapper {
-        display: block !important;
-        flex: 0 0 auto !important;
-    }
-
-    /* Style the hamburger popover trigger button */
-    div.mobile-menu-wrapper div[data-testid="stPopover"] > button {
-        background: transparent !important;
-        border: 1px solid var(--line) !important;
-        border-radius: 8px !important;
-        min-height: 38px !important;
-        padding: 4px 10px !important;
-        box-shadow: none !important;
-        color: var(--navy) !important;
-    }
-    div.mobile-menu-wrapper div[data-testid="stPopover"] > button:hover {
-        border-color: var(--teal) !important;
-        background: #F2F9FD !important;
-    }
-
-    /* Stacking for cards and panels */
-    div[data-testid="stHorizontalBlock"]:not(:has(.brand-logo)) { flex-wrap: wrap; gap: .75rem; }
-    div[data-testid="stHorizontalBlock"]:not(:has(.brand-logo)) > div[data-testid="stColumn"],
-    div[data-testid="stHorizontalBlock"]:not(:has(.brand-logo)) > div[data-testid="column"] {
+/* ---------- Mobile ---------- */
+@media (max-width: 640px) {{
+    .block-container {{ padding: .7rem .75rem 9rem .75rem !important; }}
+    div[data-testid="stHorizontalBlock"] {{ flex-wrap: wrap; gap: .75rem; }}
+    div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"],
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
         flex: 1 1 100% !important;
         min-width: 100% !important;
-    }
+    }}
+    .hero {{ padding-top: 14px; }}
+    .hero-mark {{ width: 54px; height: 54px; margin-bottom: 18px; }}
+    .hero-title {{ font-size: 28px; letter-spacing: -.3px; }}
+    .hero-sub {{ font-size: 14.5px; }}
+    [class*="st-key-sg_"] button {{ min-height: 0; padding: 14px 16px; }}
+    .stChatMessage {{ padding: 12px 14px !important; }}
+    .page-title {{ font-size: 26px; }}
+    .page-sub {{ font-size: 14.5px; }}
+    .panel {{ padding: 20px 18px; }}
+    .facts {{ grid-template-columns: 1fr; gap: 20px; }}
+    .contact-row {{ grid-template-columns: 1fr; gap: 4px; padding: 14px 0; }}
+    .site-footer.fixed {{ font-size: 10.5px; padding: 7px 10px; }}
+    [data-testid="stBottomBlockContainer"] {{ padding-bottom: 56px !important; }}
+}}
 
-    .hero { padding-top: 14px; }
-    .hero-mark { width: 54px; height: 54px; margin-bottom: 18px; }
-    .hero-title { font-size: 28px; letter-spacing: -.3px; }
-    .hero-sub { font-size: 14.5px; }
-    [class*="st-key-sg_"] button { min-height: 0; padding: 14px 16px; }
-    .stChatMessage { padding: 12px 14px !important; }
-    .page-title { font-size: 26px; }
-    .page-sub { font-size: 14.5px; }
-    .panel { padding: 20px 18px; }
-    .facts { grid-template-columns: 1fr; gap: 20px; }
-    .contact-row { grid-template-columns: 1fr; gap: 4px; padding: 14px 0; }
-    .site-footer.fixed { font-size: 10.5px; padding: 7px 10px; }
-    [data-testid="stBottomBlockContainer"] { padding-bottom: 56px !important; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; }
-}
+@media (prefers-reduced-motion: reduce) {{
+    * {{ transition: none !important; }}
+}}
 </style>
 """
-st.markdown(CSS.replace("__BG__", BG_CSS), unsafe_allow_html=True)
+st.markdown(CSS, unsafe_allow_html=True)
 
 # =====================================================================
-#  SESSION STATE
+#  SESSION STATE & ROUTING
 # =====================================================================
 PAGES = ["Home", "About", "Admin Portal", "Contact"]
 PLACEHOLDER = "Ask a clinical question or describe your symptoms..."
 
-st.session_state.setdefault("nav_page", PAGES[0])
+# Keep URL query parameters synced with page navigation
+qp = st.query_params.get("page", PAGES[0])
+if qp in PAGES:
+    st.session_state.nav_page = qp
+else:
+    st.session_state.setdefault("nav_page", PAGES[0])
+
+current_page = st.session_state.nav_page
+
 st.session_state.setdefault("messages", [])
 st.session_state.setdefault("user_report_text", "")
 st.session_state.setdefault("active_report_name", "")
@@ -644,6 +647,7 @@ st.session_state.setdefault("uploader_key", 0)
 
 def go(page: str):
     st.session_state.nav_page = page
+    st.query_params["page"] = page
 
 
 def ask(query: str):
@@ -662,64 +666,50 @@ def new_chat():
 
 
 # =====================================================================
-#  NAVBAR (Native Responsive HTML with Auto-Switching Hamburger)
+#  NAVBAR (Rendered via clean HTML)
 # =====================================================================
-# Sync active page with URL query parameters for clean page navigation
-qp = st.query_params.get("page", PAGES[0])
-if qp in PAGES:
-    st.session_state.nav_page = qp
-current_page = st.session_state.nav_page
-
-# Build Desktop Links HTML
 desktop_links_html = "".join([
-    f'<a href="?page={p}" target="_self" class="nav-link {"active" if p == current_page else ""}">{p}</a>'
+    f'<a href="?page={quote(p)}" target="_self" class="nav-link {"active" if p == current_page else ""}">{p}</a>'
     for p in PAGES
 ])
 
-# Build Mobile Dropdown Links HTML
 mobile_links_html = "".join([
-    f'<a href="?page={p}" target="_self" class="{"active" if p == current_page else ""}">{p}</a>'
+    f'<a href="?page={quote(p)}" target="_self" class="{"active" if p == current_page else ""}">{p}</a>'
     for p in PAGES
 ])
 
-# Render the Single-Row Navbar Container
-st.markdown(
-    f"""
-    <div class="navbar-container">
-        <!-- Left: Brand Logo & Title -->
-        <a href="?page=Home" target="_self" class="brand-section">
-            <div class="brand-mark">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round">
-                    <path d="M12 4v16M4 12h16"/>
-                </svg>
-            </div>
-            <span class="brand-name">Medibot</span>
-        </a>
-
-        <!-- Right (Desktop): Clean Text Links -->
-        <nav class="desktop-links">
-            {desktop_links_html}
-        </nav>
-
-        <!-- Right (Mobile only): Borderless 3-Line Hamburger Dropdown -->
-        <div class="mobile-menu">
-            <details>
-                <summary aria-label="Toggle menu">
-                    <div class="hamburger-lines">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                </summary>
-                <div class="mobile-dropdown">
-                    {mobile_links_html}
-                </div>
-            </details>
+navbar_html = textwrap.dedent(f"""
+<div class="navbar-container">
+    <a href="?page=Home" target="_self" class="brand-section">
+        <div class="brand-mark">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round">
+                <path d="M12 4v16M4 12h16"/>
+            </svg>
         </div>
+        <span class="brand-name">Medibot</span>
+    </a>
+    <nav class="desktop-links">
+        {desktop_links_html}
+    </nav>
+    <div class="mobile-menu">
+        <details>
+            <summary aria-label="Toggle menu">
+                <div class="hamburger-lines">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </summary>
+            <div class="mobile-dropdown">
+                {mobile_links_html}
+            </div>
+        </details>
     </div>
-    """,
-    unsafe_allow_html=True
-)
+</div>
+""")
+
+st.markdown(navbar_html, unsafe_allow_html=True)
+
 
 # =====================================================================
 #  SHARED HELPERS
@@ -752,7 +742,6 @@ def _field(obj, name, default=None):
 
 
 def attach_report(uploaded):
-    """Read a PDF lab report into session memory."""
     try:
         reader = PdfReader(uploaded)
         st.session_state.user_report_text = "".join(
@@ -771,10 +760,9 @@ CLIP_SVG = (
 
 
 # =====================================================================
-#  PAGE: HOME  (chat, in the style of a standard LLM assistant)
+#  PAGE: HOME
 # =====================================================================
 def page_home():
-    # Chat bar. On current Streamlit it has a built-in paperclip for attaching a PDF.
     supports_files = True
     try:
         submission = st.chat_input(PLACEHOLDER, accept_file=True, file_type=["pdf"])
@@ -801,7 +789,6 @@ def page_home():
     has_chat = bool(st.session_state.messages)
     has_report = bool(st.session_state.active_report_name)
 
-    # Older Streamlit versions: fall back to an upload box
     if not supports_files:
         with st.expander("Attach a lab report (PDF, optional)", expanded=False):
             uploaded_doc = st.file_uploader(
@@ -812,7 +799,6 @@ def page_home():
             if uploaded_doc and uploaded_doc.name != st.session_state.active_report_name:
                 attach_report(uploaded_doc)
 
-    # Attached-report status
     if has_report:
         c_chip, c_rm = st.columns([4, 1.2])
         with c_chip:
@@ -823,7 +809,6 @@ def page_home():
         with c_rm:
             st.button("Remove report", key="rm_report", on_click=clear_report)
 
-    # Conversation header
     if has_chat:
         c_lbl, c_new = st.columns([4, 1.2])
         with c_lbl:
@@ -831,7 +816,6 @@ def page_home():
         with c_new:
             st.button("New chat", key="new_chat", on_click=new_chat)
 
-    # Empty state
     if not has_chat:
         st.markdown(
             '<div class="hero">'
@@ -866,12 +850,10 @@ def page_home():
                 args=("Explain high HbA1c levels and recommended diet",),
             )
 
-    # History
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"], unsafe_allow_html=True)
 
-    # New answer
     if query:
         with st.chat_message("assistant"):
             response_box = st.empty()
