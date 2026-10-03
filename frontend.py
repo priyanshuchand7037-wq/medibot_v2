@@ -166,23 +166,21 @@ header[data-testid="stHeader"] { background: transparent; }
     padding: 1.4rem 1.2rem 9rem 1.2rem !important;
 }
 
-/* ---------- Navbar ---------- */
+/* ---------- Navbar Base (Desktop) ---------- */
 div[data-testid="stHorizontalBlock"]:has(.brand-logo) {
     position: sticky;
     top: 12px;
     z-index: 999;
-    align-items: center;
-    flex-wrap: nowrap;
-    gap: .25rem;
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
     background: #FFFFFF;
     border: 1px solid var(--line);
     border-radius: 14px;
-    padding: 4px 20px;
+    padding: 4px 18px;
     box-shadow: 0 2px 14px rgba(11, 42, 67, .07);
     margin-bottom: 34px;
 }
-div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div { min-width: 0; }
-div[data-testid="stHorizontalBlock"]:has(.brand-logo) div[data-testid="stVerticalBlock"] { gap: 0; }
 
 .brand-logo {
     display: flex;
@@ -209,26 +207,18 @@ div[data-testid="stHorizontalBlock"]:has(.brand-logo) div[data-testid="stVertica
     line-height: 1;
 }
 
-/* nav links: plain text with an underline, not buttons */
-div[data-testid="stHorizontalBlock"]:has(.brand-logo) .stButton,
-div[data-testid="stHorizontalBlock"]:has(.brand-logo) div[data-testid="stButton"] { width: 100%; }
+/* Desktop Nav Links Styling */
 div[data-testid="stHorizontalBlock"]:has(.brand-logo) .stButton > button {
     width: 100%;
     min-height: 44px;
-    padding: 0 4px;
-    background: transparent;
-    border: none;
+    padding: 0 8px;
+    background: transparent !important;
+    border: none !important;
     border-radius: 0;
-    box-shadow: none;
-    transform: none;
+    box-shadow: none !important;
+    transform: none !important;
     justify-content: center;
-    filter: none;
-}
-div[data-testid="stHorizontalBlock"]:has(.brand-logo) .stButton > button:hover {
-    background: transparent;
-    box-shadow: none;
-    transform: none;
-    filter: none;
+    filter: none !important;
 }
 div[data-testid="stHorizontalBlock"]:has(.brand-logo) .stButton > button p {
     position: relative;
@@ -237,7 +227,7 @@ div[data-testid="stHorizontalBlock"]:has(.brand-logo) .stButton > button p {
     font-size: 14.5px;
     font-weight: 500;
     color: var(--text);
-    transition: color .2s ease;
+    white-space: nowrap;
 }
 div[data-testid="stHorizontalBlock"]:has(.brand-logo) .stButton > button p::after {
     content: "";
@@ -251,6 +241,76 @@ div[data-testid="stHorizontalBlock"]:has(.brand-logo) .stButton > button p::afte
 }
 div[data-testid="stHorizontalBlock"]:has(.brand-logo) .stButton > button:hover p { color: var(--teal); }
 div[data-testid="stHorizontalBlock"]:has(.brand-logo) .stButton > button:hover p::after { transform: scaleX(1); }
+
+/* BY DEFAULT (Desktop / Laptop): HIDE the hamburger popover completely */
+div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:last-child {
+    display: none !important;
+}
+
+/* ---------- Mobile View (<= 768px) ---------- */
+@media (max-width: 768px) {
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) {
+        position: sticky;
+        top: 8px;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 6px 14px !important;
+        margin-bottom: 22px !important;
+    }
+
+    /* 1. Left side: Keep brand logo */
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:first-child {
+        display: flex !important;
+        flex: 1 1 auto !important;
+        width: auto !important;
+    }
+
+    /* 2. Middle items: HIDE all 4 desktop text buttons on mobile */
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:nth-child(2),
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:nth-child(3),
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:nth-child(4),
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:nth-child(5) {
+        display: none !important;
+    }
+
+    /* 3. Right side: SHOW hamburger popover */
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:last-child {
+        display: flex !important;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        justify-content: flex-end !important;
+    }
+
+    /* Strip ALL borders, outlines, down-arrow icons, and backgrounds from the hamburger */
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) div[data-testid="stPopover"] {
+        display: flex !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) div[data-testid="stPopover"] > button {
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        padding: 4px !important;
+        min-height: auto !important;
+        height: auto !important;
+        width: auto !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) div[data-testid="stPopover"] > button:hover,
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) div[data-testid="stPopover"] > button:focus,
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) div[data-testid="stPopover"] > button:active {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Hide the built-in dropdown arrow / caret icon that Streamlit popover renders */
+    div[data-testid="stHorizontalBlock"]:has(.brand-logo) div[data-testid="stPopover"] > button svg:not(.custom-hamburger) {
+        display: none !important;
+    }
+}
+
 
 /* ---------- Buttons (default = solid action button) ---------- */
 .stButton > button {
@@ -634,14 +694,30 @@ def new_chat():
 
 
 # =====================================================================
-#  NAVBAR (Desktop inline tabs + Mobile Hamburger Popover)
+#  NAVBAR (Desktop tabs + Borderless Mobile Hamburger)
 # =====================================================================
 current_page = st.session_state.nav_page
+active_col = PAGES.index(current_page) + 2
 
-# Column structure: [Logo, Home, About, Admin, Contact, Hamburger-Menu]
-nav_cols = st.columns([3.5, 1, 1, 1.4, 1, 0.8])
+st.markdown(
+    f"""
+<style>
+div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:nth-child({active_col}) .stButton > button p {{
+    color: var(--teal) !important;
+    font-weight: 600 !important;
+}}
+div[data-testid="stHorizontalBlock"]:has(.brand-logo) > div:nth-child({active_col}) .stButton > button p::after {{
+    transform: scaleX(1) !important;
+}}
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
-# 1. Brand Logo (Left)
+# Exactly 6 columns: [Logo, Home, About, Admin, Contact, Mobile Hamburger]
+nav_cols = st.columns([3.5, 1, 1, 1.4, 1, 0.6])
+
+# Col 1: Logo
 with nav_cols[0]:
     st.markdown(
         '<div class="brand-logo"><div class="brand-mark">'
@@ -651,26 +727,25 @@ with nav_cols[0]:
         unsafe_allow_html=True,
     )
 
-# 2. Desktop Inline Buttons (Visible on desktop, hidden on mobile via CSS)
+# Cols 2-5: Desktop Links (Hidden on mobile via CSS nth-child rules)
 for col, name in zip(nav_cols[1:5], PAGES):
     with col:
-        st.markdown('<div class="desktop-nav-link">', unsafe_allow_html=True)
         st.button(name, key="nav_" + name.lower().replace(" ", "_"), on_click=go, args=(name,))
-        st.markdown('</div>', unsafe_allow_html=True)
 
-# 3. Hamburger Menu (Hidden on desktop, appears at right end on mobile)
+# Col 6: Borderless Pure 3-Line Hamburger (Hidden on desktop, visible on mobile)
 with nav_cols[5]:
-    st.markdown('<div class="mobile-menu-wrapper">', unsafe_allow_html=True)
-    with st.popover("☰", help="Menu"):
+    # Label is a clean, native SVG with three horizontal lines
+    HAMBURGER_ICON = (
+        ":material/menu:"
+    )
+    with st.popover(HAMBURGER_ICON, help="Menu"):
         st.markdown("**Navigation**")
         for p in PAGES:
-            is_active = " (Active)" if p == current_page else ""
+            is_active = " ✓" if p == current_page else ""
             if st.button(f"{p}{is_active}", key=f"mob_nav_{p.lower().replace(' ', '_')}"):
                 go(p)
                 st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
-    
 
 # =====================================================================
 #  SHARED HELPERS
